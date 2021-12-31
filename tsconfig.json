@@ -1,0 +1,15 @@
+{
+  "include": ["./src/**/*"],
+  "exclude": ["node_modules", "**/*.spec.ts"],
+  "extends": "@tsconfig/node12/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "outDir": "dist",
+    "watch": false,
+    "target": "es5",
+    "allowSyntheticDefaultImports": true,
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "declaration": true
+  }
+}
