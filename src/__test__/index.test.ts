@@ -110,3 +110,46 @@ describe("retryWhen argument: argumentsGenerator", () => {
     expect(mockArgsGen).toBeCalledTimes(3);
   });
 });
+
+describe("retryWhen", () => {
+  it("can get return after retries", async () => {
+    const mockFunc = jest.fn();
+    const func = (n: number) => {
+      mockFunc(n);
+      return new Promise((resolve, reject) => (n < 3 ? reject(n) : resolve(n)));
+    };
+
+    const executor = retryWhen({
+      func,
+      when: (err, res, { retryCount }) => err != null,
+      argumentsGenerator: (err, res, { retryCount }) => [retryCount],
+      delayGenerator: () => DEFAULT_DELAY,
+    });
+
+    const ret = await executor(0);
+    expect(ret).toBe(3);
+    expect(mockFunc.mock.calls).toEqual([[0], [1], [2], [3]]);
+  });
+
+  it("can get error after retires", async () => {
+    const mockFunc = jest.fn();
+    const func = (n: number) => {
+      mockFunc(n);
+      return new Promise((resolve, reject) => reject(`Error: ${n}`));
+    };
+
+    const executor = retryWhen({
+      func,
+      when: (err, res, { retryCount }) => retryCount <= 3,
+      argumentsGenerator: (err, res, { retryCount }) => [retryCount],
+      delayGenerator: () => DEFAULT_DELAY,
+    });
+
+    try {
+      await executor(0);
+    } catch (err) {
+      expect(err).toBe("Error: 3");
+    }
+    expect(mockFunc.mock.calls).toEqual([[0], [1], [2], [3]]);
+  });
+});
