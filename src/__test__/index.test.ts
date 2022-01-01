@@ -35,11 +35,9 @@ describe("retryWhen argument: func", () => {
   });
 });
 
-describe("retryWhen argument when", () => {
+describe("retryWhen argument: when", () => {
   it("can get correct arguments", async () => {
-    const mockFunc = jest.fn();
     const func = (n: number) => {
-      mockFunc(n);
       return new Promise((resolve, reject) =>
         n <= 1 ? reject(n) : resolve(n)
       );
@@ -71,6 +69,44 @@ describe("retryWhen argument when", () => {
       [undefined, 3, { retryCount: 4 }],
     ]);
     expect(mockWhen).toBeCalledTimes(4);
-    expect(mockFunc).toBeCalledTimes(4);
+  });
+});
+
+describe("retryWhen argument: argumentsGenerator", () => {
+  it("can get correct arguments", async () => {
+    const mockFunc = jest.fn();
+    const func = (n: number) => {
+      mockFunc(n);
+      return new Promise((resolve, reject) =>
+        n <= 1 ? reject(n) : resolve(n)
+      );
+    };
+    const mockArgsGen = jest.fn();
+    const argumentsGenerator = (
+      err: any,
+      res: any,
+      params: {
+        args: any[];
+        retryCount: number;
+      }
+    ) => {
+      mockArgsGen(err, res, params);
+      return [params.retryCount];
+    };
+    const when = (err: any, res: any, params: { retryCount: number }) =>
+      params.retryCount <= 3;
+    const executor = retryWhen({
+      func,
+      when,
+      argumentsGenerator,
+      delayGenerator: () => DEFAULT_DELAY,
+    });
+    await executor(0);
+    expect(mockArgsGen.mock.calls).toEqual([
+      [0, undefined, { args: [0], retryCount: 1 }],
+      [1, undefined, { args: [1], retryCount: 2 }],
+      [undefined, 2, { args: [2], retryCount: 3 }],
+    ]);
+    expect(mockArgsGen).toBeCalledTimes(3);
   });
 });
